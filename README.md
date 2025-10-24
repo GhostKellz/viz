@@ -25,26 +25,31 @@ VIZ redefines the classic image manipulation pipeline with a **compile-time type
 
 ## 🚀 Key Features
 
-### 🧱 Modern Image Stack
-- Written 100% in **Zig** — no C shims or legacy wrappers.
-- Fully modular pipeline: `decode → transform → render → export`.
-- Compatible with `.png`, `.jpg`, `.tiff`, `.webp`, `.bmp`, `.hdr`, and more.
+### � Prototype Core (v0.1 dev)
+- Pure-Zig `viz.Image` type with allocator-safe pixel storage.
+- Binary **PPM (P6)** load/save helpers.
+- Simple brightness scaling in-place.
 
-### ⚡ GPU-Accelerated Processing
-- **CUDA** and **Vulkan compute backend** for real-time filters and transformations.
-- Automatic CPU/GPU fallback for headless servers.
-- Supports NVIDIA, AMD, and Intel GPUs (through modular backends).
+### 🛠️ Early CLI Utilities
+- `viz info <image.ppm>` prints dimensions.
+- `viz brighten <in.ppm> <out.ppm> <factor>` scales brightness.
 
-### 🔮 Typed Effects & Filters
-- Pure-Zig API for chaining filters at compile-time:
-  ```zig
-  const viz = @import("viz");
-  const image = try viz.open("photo.png");
-  const result = image
-      .blur(3.5)
-      .brightness(1.2)
-      .contrast(0.9)
-      .export("output.webp");
+### 🧭 Status
+> The current branch is an early research prototype. PNG/JPEG codecs,
+> SIMD/GPU backends, and effect chaining are still roadmap items (see below).
+
+```zig
+const std = @import("std");
+const viz = @import("viz");
+
+pub fn run() !void {
+  const allocator = std.heap.page_allocator;
+  var image = try viz.Image.loadPPMFile(allocator, "input.ppm");
+  defer image.deinit();
+
+  image.applyBrightness(1.2);
+  try image.writePPMFile("output.ppm");
+}
 ```
 
 ---
@@ -107,6 +112,20 @@ VIZ redefines the classic image manipulation pipeline with a **compile-time type
 git clone https://github.com/ghostkellz/viz.git
 cd viz
 zig build run -- --help
+```
+
+### Usage
+
+Inspect an image (PPM only for now):
+
+```bash
+zig build run -- info path/to/input.ppm
+```
+
+Brighten an image in place:
+
+```bash
+zig build run -- brighten path/to/input.ppm zig-out/output.ppm 1.25
 ```
 
 ---

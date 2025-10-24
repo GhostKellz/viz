@@ -2,26 +2,71 @@ const std = @import("std");
 const viz = @import("viz");
 
 pub fn main() !void {
-    // Prints to stderr, ignoring potential errors.
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
-    try viz.bufferedPrint();
-}
-
-test "simple test" {
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(i32) = .empty;
-    defer list.deinit(gpa); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(gpa, 42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
-
-test "fuzz example" {
-    const Context = struct {
-        fn testOne(context: @This(), input: []const u8) anyerror!void {
-            _ = context;
-            // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-            try std.testing.expect(!std.mem.eql(u8, "canyoufindme", input));
+    var gpa_state = std.heap.GeneralPurposeAllocator(.{}){};
+    defer {
+        const deinit_status = gpa_state.deinit();
+        if (deinit_status == .leak) {
+            std.log.warn("GeneralPurposeAllocator detected a leak", .{});
         }
+    }
+    const allocator = gpa_state.allocator();
+
+    var args = try std.process.argsWithAllocator(allocator);
+    defer args.deinit();
+
+    const exe_name = args.next() orelse "viz";
+    const command = args.next() orelse {
+        try printUsage(exe_name);
+        return;
     };
-    try std.testing.fuzz(Context{}, Context.testOne, .{});
+
+    if (std.mem.eql(u8, command, "info")) {
+        const input_path = args.next() orelse {
+            try printUsage(exe_name);
+            return error.InvalidArguments;
+        };
+        var image = try viz.Image.loadPPMFile(allocator, input_path);
+        defer image.deinit();
+        std.debug.print("{s}: {d}x{d}\n", .{ input_path, image.width, image.height });
+    } else if (std.mem.eql(u8, command, "brighten")) {
+        const input_path = args.next() orelse {
+            try printUsage(exe_name);
+            return error.InvalidArguments;
+        };
+        const output_path = args.next() orelse {
+            try printUsage(exe_name);
+            return error.InvalidArguments;
+        };
+        const factor_str = args.next() orelse {
+            try printUsage(exe_name);
+            return error.InvalidArguments;
+        };
+        const factor = std.fmt.parseFloat(f32, factor_str) catch {
+            std.log.err("invalid brightness factor: {s}", .{factor_str});
+            return error.InvalidArguments;
+        };
+
+        var image = try viz.Image.loadPPMFile(allocator, input_path);
+        defer image.deinit();
+        image.applyBrightness(factor);
+        try image.writePPMFile(output_path);
+    } else if (std.mem.eql(u8, command, "--help") or std.mem.eql(u8, command, "-h")) {
+        try printUsage(exe_name);
+    } else {
+        std.log.err("unknown command '{s}'", .{command});
+        try printUsage(exe_name);
+        return error.InvalidArguments;
+    }
+}
+
+fn printUsage(exe_name: []const u8) !void {
+    var stderr = std.io.getStdErr().writer();
+    try stderr.print(
+        "Usage: {s} <command> [options]\n\n",
+        .{exe_name},
+    );
+    try stderr.writeAll("Commands:\n");
+    try stderr.writeAll("  info <input.ppm>                 Print image dimensions (PPM only).\n");
+    try stderr.writeAll("  brighten <input.ppm> <output.ppm> <factor>  Apply brightness scaling.\n");
+    try stderr.writeAll("  --help                           Show this message.\n");
 }
