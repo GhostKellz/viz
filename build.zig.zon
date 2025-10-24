@@ -31,7 +31,28 @@
     // `zig build --fetch` can be used to fetch all dependencies of a package, recursively.
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
-    .dependencies = .{},
+    .dependencies = .{
+        .zpix = .{
+            .url = "https://github.com/ghostkellz/zpix/archive/refs/heads/main.tar.gz",
+            .hash = "zpix-0.1.0--th93fe4BgCY9e64XCwq1683ML_UP-mXNmr4iz_zous2",
+        },
+        .zpack = .{
+            .url = "https://github.com/ghostkellz/zpack/archive/refs/heads/main.tar.gz",
+            .hash = "zpack-0.3.1-_6t6Ji1yCAAyyKPkvMBU9q7ZcgGwBqVwJ4tTQGCXWcO8",
+        },
+        .zfont = .{
+            .url = "https://github.com/ghostkellz/zfont/archive/refs/heads/main.tar.gz",
+            .hash = "zfont-0.1.0-qcMRYK2ICwA3x_9gRT2lotL7ZS4fUA1bRNQi9JKAn8Kw",
+        },
+        .flash = .{
+            .url = "https://github.com/ghostkellz/flash/archive/refs/heads/main.tar.gz",
+            .hash = "flash-0.3.1-dnj737SSBQBgVOHiNFHpXWrFth7PyGxCgfkmlBYtZz5S",
+        },
+        .phantom = .{
+            .url = "https://github.com/ghostkellz/phantom/archive/refs/heads/main.tar.gz",
+            .hash = "phantom-0.5.0-E0eWBAExEgAqKNKsRXtmXVGYwsRuToVa1_BW9Jv07MYV",
+        },
+    },
     .paths = .{
         "build.zig",
         "build.zig.zon",

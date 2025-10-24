@@ -79,6 +79,11 @@ pub fn build(b: *std.Build) void {
                 // can be extremely useful in case of collisions (which can happen
                 // importing modules from different packages).
                 .{ .name = "viz", .module = mod },
+                .{ .name = "zpix", .module = b.dependency("zpix", .{}).module("zpix") },
+                .{ .name = "zpack", .module = b.dependency("zpack", .{}).module("zpack") },
+                .{ .name = "zfont", .module = b.dependency("zfont", .{}).module("zfont") },
+                .{ .name = "flash", .module = b.dependency("flash", .{}).module("flash") },
+                .{ .name = "phantom", .module = b.dependency("phantom", .{}).module("phantom") },
             },
         }),
     });
