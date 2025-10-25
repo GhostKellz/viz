@@ -21,6 +21,9 @@ pub fn build(b: *std.Build) void {
     // target and optimize options) will be listed when running `zig build --help`
     // in this directory.
 
+    const flash_module = b.dependency("flash", .{}).module("flash");
+    const zfont_module = b.dependency("zfont", .{}).module("zfont");
+
     // This creates a module, which represents a collection of source files alongside
     // some compilation options, such as optimization mode and linked system libraries.
     // Zig modules are the preferred way of making Zig code available to consumers.
@@ -40,6 +43,10 @@ pub fn build(b: *std.Build) void {
         // which requires us to specify a target.
         .target = target,
     });
+    mod.link_libc = true;
+
+    const zlib_lib_name = if (target.result.os.tag == .windows) "zlib" else "z";
+    mod.linkSystemLibrary(zlib_lib_name, .{});
 
     // Here we define an executable. An executable needs to have a root module
     // which needs to expose a `main` function. While we could add a main function
@@ -79,14 +86,14 @@ pub fn build(b: *std.Build) void {
                 // can be extremely useful in case of collisions (which can happen
                 // importing modules from different packages).
                 .{ .name = "viz", .module = mod },
-                .{ .name = "zpix", .module = b.dependency("zpix", .{}).module("zpix") },
-                .{ .name = "zpack", .module = b.dependency("zpack", .{}).module("zpack") },
-                .{ .name = "zfont", .module = b.dependency("zfont", .{}).module("zfont") },
-                .{ .name = "flash", .module = b.dependency("flash", .{}).module("flash") },
-                .{ .name = "phantom", .module = b.dependency("phantom", .{}).module("phantom") },
+                .{ .name = "zfont", .module = zfont_module },
+                .{ .name = "flash", .module = flash_module },
             },
         }),
     });
+
+    exe.linkSystemLibrary(zlib_lib_name);
+    exe.linkLibC();
 
     // This declares intent for the executable to be installed into the
     // install prefix when running `zig build` (i.e. when executing the default
@@ -126,6 +133,8 @@ pub fn build(b: *std.Build) void {
     const mod_tests = b.addTest(.{
         .root_module = mod,
     });
+    mod_tests.linkSystemLibrary(zlib_lib_name);
+    mod_tests.linkLibC();
 
     // A run step that will run the test executable.
     const run_mod_tests = b.addRunArtifact(mod_tests);
@@ -136,6 +145,8 @@ pub fn build(b: *std.Build) void {
     const exe_tests = b.addTest(.{
         .root_module = exe.root_module,
     });
+    exe_tests.linkSystemLibrary(zlib_lib_name);
+    exe_tests.linkLibC();
 
     // A run step that will run the second test executable.
     const run_exe_tests = b.addRunArtifact(exe_tests);
